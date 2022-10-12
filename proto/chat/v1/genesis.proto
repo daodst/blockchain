@@ -1,0 +1,65 @@
+syntax = "proto3";
+package freemasonry.chat.v1;
+
+import "google/api/annotations.proto";
+import "gogoproto/gogo.proto";
+import "cosmos/base/v1beta1/coin.proto";
+
+option go_package = "freemasonry.cc/blockchain/x/chat/types";
+option (gogoproto.marshaler_all) = true;
+option (gogoproto.unmarshaler_all) = true;
+option (gogoproto.sizer_all) = true;
+
+// GenesisState defines the module's genesis state.
+message GenesisState {
+  // module parameters
+  Params params = 1 [ (gogoproto.nullable) = false ];
+}
+
+// chat
+message Params {
+  //
+  cosmos.base.v1beta1.Coin minMortgageCoin = 1 [ (gogoproto.nullable) = false ];
+
+  //
+  uint64 maxPhoneNumber = 2;
+
+  //att
+  cosmos.base.v1beta1.Coin destroyPhoneNumberCoin = 3 [ (gogoproto.nullable) = false ];
+
+  //att 
+  cosmos.base.v1beta1.Coin preAttCoin = 4 [ (gogoproto.nullable) = false ];
+
+  //att 
+  string preAttAccount = 5;
+
+  //att 
+  string attDestroyPercent                = 6 [
+    (gogoproto.moretags)   = "yaml:\"att_destroy_percent\"",
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
+    (gogoproto.nullable)   = false
+  ];
+
+  //att 
+  string attGatewayPercent                = 7 [
+    (gogoproto.moretags)   = "yaml:\"att_gateway_percent\"",
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
+    (gogoproto.nullable)   = false
+  ];
+  //att dpos
+  string attDposPercent                = 8 [
+    (gogoproto.moretags)   = "yaml:\"att_dpos_percent\"",
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
+    (gogoproto.nullable)   = false
+  ];
+
+  //
+  cosmos.base.v1beta1.Coin chatFee = 9 [ (gogoproto.nullable) = false ];
+}
+
+message chatReward {
+  //
+  int64 Height = 1;
+  //
+  string Value = 2;
+}

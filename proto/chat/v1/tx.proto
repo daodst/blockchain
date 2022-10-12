@@ -1,0 +1,77 @@
+syntax = "proto3";
+package freemasonry.chat.v1;
+
+import "google/api/annotations.proto";
+import "gogoproto/gogo.proto";
+import "cosmos/base/v1beta1/coin.proto";
+
+option go_package = "freemasonry.cc/blockchain/x/chat/types";
+
+// Msg defines the erc20 Msg service.
+service Msg {
+  rpc Register(MsgRegister) returns (MsgEmptyResponse);
+  rpc SetChatFee(MsgSetChatFee) returns (MsgEmptyResponse);
+  rpc SendGift(MsgSendGift) returns (MsgEmptyResponse);
+  rpc AddressBookSave(MsgAddressBookSave) returns (MsgEmptyResponse);
+  rpc MobileTransfer(MsgMobileTransfer) returns (MsgEmptyResponse);
+  rpc ChangeGateway(MsgChangeGateway) returns (MsgEmptyResponse);
+  rpc BurnGetMobile(MsgBurnGetMobile) returns (MsgEmptyResponse);
+  rpc SetChatInfo(MsgSetChatInfo) returns (MsgEmptyResponse);
+}
+
+message MsgRegister {
+  string from_address = 1 [(gogoproto.moretags) = "yaml:\"from_address\""];
+  string node_address = 2 [(gogoproto.moretags) = "yaml:\"node_address\""];
+  cosmos.base.v1beta1.Coin mortgage_amount = 3 [(gogoproto.nullable) = false,(gogoproto.moretags) = "yaml:\"mortgage_amount\""];
+  string mobile_prefix = 4 [(gogoproto.moretags) = "yaml:\"mobile_prefix\""];
+}
+
+message MsgSetChatFee {
+  string from_address = 1 [(gogoproto.moretags) = "yaml:\"from_address\""];
+  cosmos.base.v1beta1.Coin fee = 2 [(gogoproto.nullable) = false,(gogoproto.moretags) = "yaml:\"fee\""];
+}
+
+message MsgSendGift {
+  string                    from_address = 1  [(gogoproto.moretags) = "yaml:\"from_address\""];
+  string                    node_address = 2  [(gogoproto.moretags) = "yaml:\"node_address\""];
+  string                    to_address = 3    [(gogoproto.moretags) = "yaml:\"to_address\""];
+  int64                     gift_id = 4       [(gogoproto.moretags) = "yaml:\"gift_id\""];
+  int64                     gift_amount = 5   [(gogoproto.moretags) = "yaml:\"gift_amount\""];
+  cosmos.base.v1beta1.Coin  gift_value = 6    [(gogoproto.nullable) = false,(gogoproto.moretags) = "yaml:\"gift_value\""];
+}
+
+message MsgAddressBookSave {
+  string            from_address = 1  [(gogoproto.moretags) = "yaml:\"from_address\""] ;
+  repeated string   address_book = 2  [(gogoproto.moretags) = "yaml:\"address_book\""];
+}
+
+message MsgMobileTransfer {
+  string from_address = 1 [(gogoproto.moretags) = "yaml:\"from_address\""];
+  string to_address = 2 [(gogoproto.moretags) = "yaml:\"to_address\""];
+  string mobile = 3 [(gogoproto.moretags) = "yaml:\"mobile\""];
+}
+
+message MsgChangeGateway {
+  string from_address = 1 [(gogoproto.moretags) = "yaml:\"from_address\""];
+  string gateway = 2 [(gogoproto.moretags) = "yaml:\"gateway\""];
+}
+
+message MsgBurnGetMobile {
+  string from_address = 1 [(gogoproto.moretags) = "yaml:\"from_address\""];
+  string mobile_prefix = 2 [(gogoproto.moretags) = "yaml:\"mobile_prefix\""];
+}
+
+message MsgSetChatInfo {
+  string from_address = 1 [(gogoproto.moretags) = "yaml:\"from_address\""];             //
+  string node_address = 2 [(gogoproto.moretags) = "yaml:\"node_address\""];             //
+  repeated string   address_book = 3  [(gogoproto.moretags) = "yaml:\"address_book\""]; //
+  repeated string   chat_blacklist = 4  [(gogoproto.moretags) = "yaml:\"chat_blacklist\""];       //
+
+  string chat_restricted_mode = 5 [(gogoproto.moretags) = "yaml:\"chat_limit\""];                 // （fee | any | list）
+  cosmos.base.v1beta1.Coin chat_fee = 6 [(gogoproto.nullable) = false,(gogoproto.moretags) = "yaml:\"chat_fee\""]; // fee
+  repeated string   chat_whitelist = 7  [(gogoproto.moretags) = "yaml:\"chat_whitelist\""];       // list
+}
+
+// MsgConvertCoinResponse returns no fieldsyou
+message MsgEmptyResponse {}
+
