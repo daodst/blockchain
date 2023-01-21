@@ -8,12 +8,12 @@ import (
 	"path/filepath"
 )
 
-//,
+
 func checkGenesisFile(path string) error {
 	log := core.BuildLog(core.GetFuncName(), core.LmChainClient)
 	genesisPath := filepath.Join(path, "config/genesis.json")
 
-	//,
+	
 	if exist, _ := checkSourceExist(genesisPath); exist {
 		return nil
 	}
@@ -29,7 +29,7 @@ func checkConfigFile(path string) error {
 	log := core.BuildLog(core.GetFuncName(), core.LmChainClient)
 	configPath := filepath.Join(path, "config/config.toml")
 
-	//,
+	
 	if exist, _ := checkSourceExist(configPath); exist {
 		return nil
 	}
@@ -45,7 +45,7 @@ func checkAppToml(path string) error {
 	log := core.BuildLog(core.GetFuncName(), core.LmChainClient)
 	filePath := filepath.Join(path, "config/app.toml")
 
-	//,
+	
 	if exist, _ := checkSourceExist(filePath); exist {
 		return nil
 	}
@@ -61,7 +61,7 @@ func checkClientToml(path string) error {
 	log := core.BuildLog(core.GetFuncName(), core.LmChainClient)
 	filePath := filepath.Join(path, "config/client.toml")
 
-	//,
+	
 	if exist, _ := checkSourceExist(filePath); exist {
 		return nil
 	}
@@ -77,7 +77,7 @@ func checkValidatorStateJson(path string) error {
 	log := core.BuildLog(core.GetFuncName(), core.LmChainClient)
 	filePath := filepath.Join(path, "config/priv_validator_state.json")
 
-	//,
+	
 	if exist, _ := checkSourceExist(filePath); exist {
 		return nil
 	}
@@ -132,7 +132,7 @@ func replaceConfig(path string) error {
 	configTomlContent := string(configTomlBuf)
 	clientTomlContent := string(clientTomlBuf)
 
-	//
+	
 	if appTomlContent != config.AppToml {
 		err = ioutil.WriteFile(appTomlPath, []byte(config.AppToml), os.ModePerm)
 		if err != nil {
@@ -166,7 +166,7 @@ func replaceConfig(path string) error {
 	return err
 }
 
-//
+
 func checkSourceExist(path string) (bool, error) {
 	_, err := os.Stat(path)
 	if err == nil {
