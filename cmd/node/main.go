@@ -16,7 +16,7 @@ import (
 	"time"
 )
 
-//
+
 func Start(cosmosRepoPath string) {
 	log := core.BuildLog(core.GetFuncName(), core.LmChainClient)
 	var err error
@@ -32,12 +32,12 @@ func Start(cosmosRepoPath string) {
 	if e, _ := checkSourceExist(filepath.Join(cosmosRepoPath, "config")); !e {
 		log.Info("init chain")
 
-		//
+		
 		err = chainRun(core.CommandName, "init", "node1", "--chain-id", core.ChainID, "--home", cosmosRepoPath)
 		if err != nil {
 			panic(err)
 		}
-		//
+		
 		err = replaceConfig(cosmosRepoPath)
 		if err != nil {
 			panic(err)
@@ -83,7 +83,7 @@ func Start(cosmosRepoPath string) {
 	logLevel := "error"
 	logLevelSet, ok := os.LookupEnv("SMART_CHAIN_LOGGING") //chain
 	if ok {
-		logLevel = logLevelSet //
+		logLevel = logLevelSet 
 	}
 
 	log.Info("start chain")
@@ -124,7 +124,7 @@ func startCmd() *cobra.Command {
 			logStoraged, _ := cmd.Flags().GetBool("log")
 			fmt.Println("log storaged:", logStoraged)
 
-			//
+			
 			if logStoraged {
 				programPath, _ := filepath.Abs(os.Args[0])
 
@@ -142,7 +142,7 @@ func startCmd() *cobra.Command {
 
 				daemonLogPath := filepath.Join(logPath, "chain.log")
 
-				log.EnableLogStorage(daemonLogPath, time.Hour*24*7, time.Hour*24) //
+				log.EnableLogStorage(daemonLogPath, time.Hour*24*7, time.Hour*24) 
 			}
 
 			var tendermintRepoPath string
