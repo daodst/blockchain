@@ -9,6 +9,10 @@ import (
 	"freemasonry.cc/blockchain/x/comm"
 	commkeeper "freemasonry.cc/blockchain/x/comm/keeper"
 	commtypes "freemasonry.cc/blockchain/x/comm/types"
+	"freemasonry.cc/blockchain/x/contract"
+	contractclient "freemasonry.cc/blockchain/x/contract/client"
+	contractKeeper "freemasonry.cc/blockchain/x/contract/keeper"
+	contractTypes "freemasonry.cc/blockchain/x/contract/types"
 	"freemasonry.cc/blockchain/x/pledge"
 	pledgeclient "freemasonry.cc/blockchain/x/pledge/client"
 	pledgekeeper "freemasonry.cc/blockchain/x/pledge/keeper"
@@ -102,39 +106,39 @@ import (
 	ibckeeper "github.com/cosmos/ibc-go/v3/modules/core/keeper"
 	ibctesting "github.com/cosmos/ibc-go/v3/testing"
 
-	"github.com/tharsis/ethermint/encoding"
+	"github.com/evmos/ethermint/encoding"
 
 	"freemasonry.cc/blockchain/app/ante"
-	ethAnte "github.com/tharsis/ethermint/app/ante"
-	srvflags "github.com/tharsis/ethermint/server/flags"
-	ethermint "github.com/tharsis/ethermint/types"
-	"github.com/tharsis/ethermint/x/evm"
-	evmrest "github.com/tharsis/ethermint/x/evm/client/rest"
-	evmkeeper "github.com/tharsis/ethermint/x/evm/keeper"
-	evmtypes "github.com/tharsis/ethermint/x/evm/types"
-	"github.com/tharsis/ethermint/x/feemarket"
-	feemarketkeeper "github.com/tharsis/ethermint/x/feemarket/keeper"
-	feemarkettypes "github.com/tharsis/ethermint/x/feemarket/types"
-	"github.com/tharsis/evmos/v4/x/claims"
-	claimskeeper "github.com/tharsis/evmos/v4/x/claims/keeper"
-	claimstypes "github.com/tharsis/evmos/v4/x/claims/types"
-	"github.com/tharsis/evmos/v4/x/epochs"
-	epochskeeper "github.com/tharsis/evmos/v4/x/epochs/keeper"
-	epochstypes "github.com/tharsis/evmos/v4/x/epochs/types"
-	"github.com/tharsis/evmos/v4/x/erc20"
-	erc20client "github.com/tharsis/evmos/v4/x/erc20/client"
-	erc20keeper "github.com/tharsis/evmos/v4/x/erc20/keeper"
-	erc20types "github.com/tharsis/evmos/v4/x/erc20/types"
-	incentivesclient "github.com/tharsis/evmos/v4/x/incentives/client"
-	incentivestypes "github.com/tharsis/evmos/v4/x/incentives/types"
-	//inflationkeeper "github.com/tharsis/evmos/v4/x/inflation/keeper"
-	//inflationtypes "github.com/tharsis/evmos/v4/x/inflation/types"
-	"github.com/tharsis/evmos/v4/x/recovery"
-	recoverykeeper "github.com/tharsis/evmos/v4/x/recovery/keeper"
-	recoverytypes "github.com/tharsis/evmos/v4/x/recovery/types"
-	"github.com/tharsis/evmos/v4/x/vesting"
-	vestingkeeper "github.com/tharsis/evmos/v4/x/vesting/keeper"
-	vestingtypes "github.com/tharsis/evmos/v4/x/vesting/types"
+	ethAnte "github.com/evmos/ethermint/app/ante"
+	srvflags "github.com/evmos/ethermint/server/flags"
+	ethermint "github.com/evmos/ethermint/types"
+	"github.com/evmos/ethermint/x/evm"
+	evmrest "github.com/evmos/ethermint/x/evm/client/rest"
+	evmkeeper "github.com/evmos/ethermint/x/evm/keeper"
+	evmtypes "github.com/evmos/ethermint/x/evm/types"
+	"github.com/evmos/ethermint/x/feemarket"
+	feemarketkeeper "github.com/evmos/ethermint/x/feemarket/keeper"
+	feemarkettypes "github.com/evmos/ethermint/x/feemarket/types"
+	"github.com/evmos/evmos/v9/x/claims"
+	claimskeeper "github.com/evmos/evmos/v9/x/claims/keeper"
+	claimstypes "github.com/evmos/evmos/v9/x/claims/types"
+	"github.com/evmos/evmos/v9/x/epochs"
+	epochskeeper "github.com/evmos/evmos/v9/x/epochs/keeper"
+	epochstypes "github.com/evmos/evmos/v9/x/epochs/types"
+	"github.com/evmos/evmos/v9/x/erc20"
+	erc20client "github.com/evmos/evmos/v9/x/erc20/client"
+	erc20keeper "github.com/evmos/evmos/v9/x/erc20/keeper"
+	erc20types "github.com/evmos/evmos/v9/x/erc20/types"
+	incentivesclient "github.com/evmos/evmos/v9/x/incentives/client"
+	incentivestypes "github.com/evmos/evmos/v9/x/incentives/types"
+	//inflationkeeper "github.com/evmos/evmos/v9/x/inflation/keeper"
+	//inflationtypes "github.com/evmos/evmos/v9/x/inflation/types"
+	"github.com/evmos/evmos/v9/x/recovery"
+	recoverykeeper "github.com/evmos/evmos/v9/x/recovery/keeper"
+	recoverytypes "github.com/evmos/evmos/v9/x/recovery/types"
+	"github.com/evmos/evmos/v9/x/vesting"
+	vestingkeeper "github.com/evmos/evmos/v9/x/vesting/keeper"
+	vestingtypes "github.com/evmos/evmos/v9/x/vesting/types"
 
 	chatkeeper "freemasonry.cc/blockchain/x/chat/keeper"
 	chattypes "freemasonry.cc/blockchain/x/chat/types"
@@ -175,6 +179,7 @@ var (
 			// Evmos proposal types
 			erc20client.RegisterCoinProposalHandler, erc20client.RegisterERC20ProposalHandler, erc20client.ToggleTokenConversionProposalHandler,
 			incentivesclient.RegisterIncentiveProposalHandler, incentivesclient.CancelIncentiveProposalHandler, pledgeclient.ProposalHandler,
+			contractclient.ProposalHandler,
 		),
 		params.AppModuleBasic{},
 		crisis.AppModuleBasic{},
@@ -197,6 +202,7 @@ var (
 		chat.AppModuleBasic{},
 		comm.AppModuleBasic{},
 		pledge.AppModuleBasic{},
+		contract.AppModuleBasic{},
 	)
 
 	// module account permissions
@@ -221,6 +227,7 @@ var (
 		chattypes.ModuleBurnName: {authtypes.Burner},
 		commtypes.ModuleName:     nil,
 		pledgetypes.ModuleName:   {authtypes.Minter, authtypes.Burner},
+		contractTypes.ModuleName: nil,
 	}
 
 	// module accounts that are allowed to receive tokens
@@ -290,9 +297,10 @@ type Evmos struct {
 	RecoveryKeeper *recoverykeeper.Keeper
 
 	// Custom keepers
-	ChatKeeper   chatkeeper.Keeper
-	CommKeeper   commkeeper.Keeper
-	PledgeKeeper pledgekeeper.Keeper
+	ChatKeeper     chatkeeper.Keeper
+	CommKeeper     commkeeper.Keeper
+	PledgeKeeper   pledgekeeper.Keeper
+	ContractKeeper contractKeeper.Keeper
 	// the module manager
 	mm *module.Manager
 
@@ -353,10 +361,11 @@ func NewEvmos(
 		chattypes.StoreKey,
 		commtypes.StoreKey,
 		pledgetypes.StoreKey,
+		contractTypes.StoreKey,
 	)
 
 	// Add the EVM transient store key
-	tkeys := sdk.NewTransientStoreKeys(paramstypes.TStoreKey, evmtypes.TransientKey)
+	tkeys := sdk.NewTransientStoreKeys(paramstypes.TStoreKey, evmtypes.TransientKey, feemarkettypes.TransientKey)
 	memKeys := sdk.NewMemoryStoreKeys(capabilitytypes.MemStoreKey)
 
 	app := &Evmos{
@@ -414,7 +423,7 @@ func NewEvmos(
 
 	// Create Ethermint keepers
 	app.FeeMarketKeeper = feemarketkeeper.NewKeeper(
-		appCodec, keys[feemarkettypes.StoreKey], app.GetSubspace(feemarkettypes.ModuleName),
+		appCodec, app.GetSubspace(feemarkettypes.ModuleName), keys[feemarkettypes.StoreKey], tkeys[feemarkettypes.TransientKey],
 	)
 
 	// Create Ethermint keepers
@@ -437,7 +446,8 @@ func NewEvmos(
 		AddRoute(upgradetypes.RouterKey, upgrade.NewSoftwareUpgradeProposalHandler(app.UpgradeKeeper)).
 		AddRoute(ibcclienttypes.RouterKey, ibcclient.NewClientProposalHandler(app.IBCKeeper.ClientKeeper)).
 		AddRoute(erc20types.RouterKey, erc20.NewErc20ProposalHandler(&app.Erc20Keeper)).
-		AddRoute(pledgetypes.RouterKey, pledge.NewPledgeDelegateProposalHandler(&app.PledgeKeeper))
+		AddRoute(pledgetypes.RouterKey, pledge.NewPledgeDelegateProposalHandler(&app.PledgeKeeper)).
+		AddRoute(contractTypes.RouterKey, contract.NewContractProposalHandler(&app.ContractKeeper))
 	//AddRoute(incentivestypes.RouterKey, incentives.NewIncentivesProposalHandler(&app.IncentivesKeeper))
 
 	govKeeper := govkeeper.NewKeeper(
@@ -450,7 +460,7 @@ func NewEvmos(
 	//	keys[inflationtypes.StoreKey], appCodec, app.GetSubspace(inflationtypes.ModuleName),
 	//	app.AccountKeeper, app.BankKeeper, app.DistrKeeper, &stakingKeeper,
 	//	authtypes.FeeCollectorName,
-	//)
+	
 
 	app.ClaimsKeeper = claimskeeper.NewKeeper(
 		appCodec, keys[claimstypes.StoreKey], app.GetSubspace(claimstypes.ModuleName),
@@ -460,6 +470,13 @@ func NewEvmos(
 	// init comm keeper
 	app.CommKeeper = commkeeper.NewKeeper(keys[commtypes.StoreKey], appCodec, app.GetSubspace(commtypes.ModuleName),
 		app.AccountKeeper, app.BankKeeper, &stakingKeeper)
+
+	// init pledge keeper
+	app.PledgeKeeper = pledgekeeper.NewKeeper(keys[pledgetypes.StoreKey], appCodec, app.GetSubspace(pledgetypes.ModuleName),
+		app.AccountKeeper, app.BankKeeper, app.CommKeeper, pledgetypes.FeeCollectorName)
+
+	app.ContractKeeper = contractKeeper.NewKeeper(keys[contractTypes.StoreKey], appCodec, app.GetSubspace(contractTypes.ModuleName),
+		app.AccountKeeper, app.BankKeeper, &stakingKeeper, app.PledgeKeeper, app.EvmKeeper)
 
 	// register the staking hooks
 	// NOTE: stakingKeeper above is passed by reference, so that it will contain these hooks
@@ -486,7 +503,7 @@ func NewEvmos(
 	//app.IncentivesKeeper = incentiveskeeper.NewKeeper(
 	//	keys[incentivestypes.StoreKey], appCodec, app.GetSubspace(incentivestypes.ModuleName),
 	//	app.AccountKeeper, app.BankKeeper, app.InflationKeeper, app.StakingKeeper, app.EvmKeeper,
-	//)
+	
 
 	epochsKeeper := epochskeeper.NewKeeper(appCodec, keys[epochstypes.StoreKey])
 	app.EpochsKeeper = *epochsKeeper.SetHooks(
@@ -508,6 +525,7 @@ func NewEvmos(
 			app.Erc20Keeper.Hooks(),
 			//app.IncentivesKeeper.Hooks(),
 			app.ClaimsKeeper.Hooks(),
+			app.ContractKeeper.Hooks(),
 		),
 	)
 
@@ -566,10 +584,6 @@ func NewEvmos(
 	// If evidence needs to be handled for the app, set routes in router here and seal
 	app.EvidenceKeeper = *evidenceKeeper
 
-	// init pledge keeper
-	app.PledgeKeeper = pledgekeeper.NewKeeper(keys[pledgetypes.StoreKey], appCodec, app.GetSubspace(pledgetypes.ModuleName),
-		app.AccountKeeper, app.BankKeeper, app.CommKeeper, pledgetypes.FeeCollectorName)
-
 	// init chat keeper
 	app.ChatKeeper = chatkeeper.NewKeeper(keys[chattypes.StoreKey], appCodec, app.GetSubspace(chattypes.ModuleName),
 		app.AccountKeeper, app.BankKeeper, app.CommKeeper, app.PledgeKeeper)
@@ -579,16 +593,6 @@ func NewEvmos(
 			app.PledgeKeeper.CommonHooks(),
 		),
 	)
-
-	//todo hooks
-	//app.PledgeKeeper = *pledgekeeper.SetHooks(
-	//	stakingtypes.NewMultiStakingHooks(
-	//		app.DistrKeeper.Hooks(),
-	//		app.SlashingKeeper.Hooks(),
-	//		app.ClaimsKeeper.Hooks(),
-	//		app.CommKeeper.Hooks(),
-	//	),
-	//)
 
 	/****  Module Options ****/
 
@@ -635,6 +639,7 @@ func NewEvmos(
 		chat.NewAppModule(app.ChatKeeper, app.AccountKeeper),
 		comm.NewAppModule(app.CommKeeper, app.AccountKeeper),
 		pledge.NewAppModule(app.PledgeKeeper, app.AccountKeeper),
+		contract.NewAppModule(app.ContractKeeper, app.AccountKeeper),
 	)
 
 	// During begin block slashing happens after distr.BeginBlocker so that
@@ -674,6 +679,7 @@ func NewEvmos(
 		chattypes.ModuleName,
 		commtypes.ModuleName,
 		pledgetypes.ModuleName,
+		contractTypes.ModuleName,
 	)
 
 	// NOTE: fee market module must go last in order to retrieve the block gas used.
@@ -709,6 +715,7 @@ func NewEvmos(
 		chattypes.ModuleName,
 		commtypes.ModuleName,
 		pledgetypes.ModuleName,
+		contractTypes.ModuleName,
 	)
 
 	// NOTE: The genutils module must occur after staking so that pools are
@@ -749,6 +756,7 @@ func NewEvmos(
 		chattypes.ModuleName,
 		commtypes.ModuleName,
 		pledgetypes.ModuleName,
+		contractTypes.ModuleName,
 	)
 
 	app.mm.RegisterInvariants(&app.CrisisKeeper)
@@ -784,6 +792,7 @@ func NewEvmos(
 		chat.NewAppModule(app.ChatKeeper, app.AccountKeeper),
 		comm.NewAppModule(app.CommKeeper, app.AccountKeeper),
 		pledge.NewAppModule(app.PledgeKeeper, app.AccountKeeper),
+		contract.NewAppModule(app.ContractKeeper, app.AccountKeeper),
 	)
 
 	app.sm.RegisterStoreDecoders()
@@ -913,7 +922,7 @@ func (app *Evmos) BlockedAddrs() map[string]bool {
 }
 
 // LegacyAmino returns Evmos's amino codec.
-//
+
 // NOTE: This is solely to be used for testing purposes as it may be desirable
 // for modules to register their own custom testing types.
 func (app *Evmos) LegacyAmino() *codec.LegacyAmino {
@@ -921,7 +930,7 @@ func (app *Evmos) LegacyAmino() *codec.LegacyAmino {
 }
 
 // AppCodec returns Evmos's app codec.
-//
+
 // NOTE: This is solely to be used for testing purposes as it may be desirable
 // for modules to register their own custom testing types.
 func (app *Evmos) AppCodec() codec.Codec {
@@ -934,28 +943,28 @@ func (app *Evmos) InterfaceRegistry() types.InterfaceRegistry {
 }
 
 // GetKey returns the KVStoreKey for the provided store key.
-//
+
 // NOTE: This is solely to be used for testing purposes.
 func (app *Evmos) GetKey(storeKey string) *sdk.KVStoreKey {
 	return app.keys[storeKey]
 }
 
 // GetTKey returns the TransientStoreKey for the provided store key.
-//
+
 // NOTE: This is solely to be used for testing purposes.
 func (app *Evmos) GetTKey(storeKey string) *sdk.TransientStoreKey {
 	return app.tkeys[storeKey]
 }
 
 // GetMemKey returns the MemStoreKey for the provided mem key.
-//
+
 // NOTE: This is solely used for testing purposes.
 func (app *Evmos) GetMemKey(storeKey string) *sdk.MemoryStoreKey {
 	return app.memKeys[storeKey]
 }
 
 // GetSubspace returns a param subspace for a given module name.
-//
+
 // NOTE: This is solely to be used for testing purposes.
 func (app *Evmos) GetSubspace(moduleName string) paramstypes.Subspace {
 	subspace, _ := app.ParamsKeeper.GetSubspace(moduleName)
@@ -1075,6 +1084,7 @@ func initParamsKeeper(
 	paramsKeeper.Subspace(chattypes.ModuleName)
 	paramsKeeper.Subspace(commtypes.ModuleName)
 	paramsKeeper.Subspace(pledgetypes.ModuleName)
+	paramsKeeper.Subspace(contractTypes.ModuleName)
 	return paramsKeeper
 }
 
