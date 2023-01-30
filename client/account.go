@@ -36,7 +36,7 @@ type AccountList struct {
 	Accounts []Account
 }
 
-//
+
 func (this *AccountClient) GetAllAccounts() (accounts []string, err error) {
 	log := core.BuildLog(core.GetStructFuncName(this), core.LmChainClient)
 
@@ -97,12 +97,12 @@ func (this *AccountClient) FindAccountBalance(accountAddr string, denom, height 
 	var resp = rest.ResponseWithHeight{}
 	err = clientCtx.LegacyAmino.UnmarshalJSON([]byte(reponseStr), &resp)
 	if err != nil {
-		log.Error("UnmarshalJSON1")
+		log.WithError(err).Error("UnmarshalJSON1")
 		return
 	}
 	err = clientCtx.LegacyAmino.UnmarshalJSON(resp.Result, &coin)
 	if err != nil {
-		log.Error("UnmarshalJSON2")
+		log.WithError(err).Error("UnmarshalJSON2")
 		return
 	}
 	//realCoins = core.MustLedgerCoin2RealCoin(coin)
@@ -124,7 +124,7 @@ func (this *AccountClient) FindBalanceByRpc(accountAddr string, denom string) (r
 	var coin sdk.Coin
 	err = clientCtx.LegacyAmino.UnmarshalJSON(reponseStr, &coin)
 	if err != nil {
-		log.Error("UnmarshalJSON2")
+		log.WithError(err).Error("UnmarshalJSON2")
 		return
 	}
 	realCoins = core.MustLedgerCoin2RealCoin(coin)
@@ -136,12 +136,12 @@ func (this *AccountClient) CreateAccountFromPriv(priv string) (*CosmosWallet, er
 	return this.key.CreateAccountFromPriv(priv)
 }
 
-//()
+
 func (this *AccountClient) CreateAccountFromSeed(seed string) (acc *CosmosWallet, err error) {
 	return this.key.CreateAccountFromSeed(seed)
 }
 
-//
+
 func (this *AccountClient) CreateSeedWord() (mnemonic string, err error) {
 	return this.key.CreateSeedWord()
 }
