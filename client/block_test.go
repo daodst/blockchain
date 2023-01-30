@@ -41,12 +41,12 @@ func TestBl1(t *testing.T) {
 	}
 }
 
-//
+
 func TestBlockResults(t *testing.T) {
 	//D5E967FC8A604310371546FB0C9C1B32901D6BD2E4DC9FE1DA8CF4BE1A7F6730
 
 	blockClient := NewBlockClient()
-	var block int64 = 8150 //30069 //33243
+	var block int64 = 8150 //30069 
 	events, err := blockClient.FindBlockResults(&block)
 	if err != nil {
 		t.Error(err)

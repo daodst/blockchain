@@ -11,8 +11,8 @@ import (
 
 type Block struct {
 	ChainId            string   //id
-	Height             int64    //
-	Time               int64    //
+	Height             int64    
+	Time               int64    
 	LastCommitHash     string   //hash
 	Datahash           string   //hash
 	ValidatorsHash     string   //hash
@@ -21,7 +21,7 @@ type Block struct {
 	Apphash            string   //hash
 	LastResultsHash    string   //Hash
 	EvidenceHash       string   //hash
-	ProposerAddress    string   //
+	ProposerAddress    string   
 	Txs                []string //hash
 	Signatures         []Signature
 	LastBlockId        string //ID
@@ -29,9 +29,9 @@ type Block struct {
 }
 
 type Signature struct {
-	ValidatorAddress string //
-	TimeStamp        string //
-	Sign             string //
+	ValidatorAddress string 
+	TimeStamp        string 
+	Sign             string 
 }
 
 type BlockClient struct {
@@ -49,7 +49,7 @@ func (this *BlockClient) Block(height int64) (blockData *coretypes.ResultBlock, 
 		log.WithError(err).Error("GetNode")
 		return nil, err
 	}
-	// 
+	
 	return node.Block(context.Background(), &height)
 }
 
@@ -64,7 +64,7 @@ func (this *BlockClient) Find(height int64) (blockData *Block, err error) {
 		log.WithError(err).Error("GetNode")
 		return nil, err
 	}
-	//,
+	
 	if height == 0 {
 		nodeStatus, err := node.Status(context.Background())
 		if err != nil {
@@ -74,7 +74,7 @@ func (this *BlockClient) Find(height int64) (blockData *Block, err error) {
 		height = nodeStatus.SyncInfo.LatestBlockHeight
 	}
 
-	// 
+	
 	blockInfo, err := node.Block(context.Background(), &height)
 	if err != nil {
 		log.WithError(err).Error("node.Block")
@@ -114,7 +114,7 @@ func (this *BlockClient) Find(height int64) (blockData *Block, err error) {
 	return
 }
 
-// 
+
 func (this *BlockClient) FindBlockResults(height *int64) (events []abci.Event, err error) {
 	log := core.BuildLog(core.GetStructFuncName(this), core.LmChainClient)
 	node, err := clientCtx.GetNode()
