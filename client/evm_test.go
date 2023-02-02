@@ -1,12 +1,58 @@
 package client
 
 import (
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	ethcrypto "github.com/ethereum/go-ethereum/crypto"
 	"testing"
 )
 
-//
+//NFT
+func TestEvmNft(t *testing.T) {
+	evmClient := NewEvmClient()
+	addr := "dex1va8aaeystat4twpy70ns7235pxwczg0698twv4"
+	contract := "0x3921f8f5876ae2B077966C10a659d65fD8883d96"
+	nft, err := evmClient.GetNftInfo(addr, contract)
+	if err != nil {
+		t.Fatal(err)
+		return
+	}
+	t.Log(":", addr)
+	t.Log("nft:", nft)
+}
+
+//NFT
+func TestEvmQueryContractCode(t *testing.T) {
+	evmClient := NewEvmClient()
+	contractAddress, err := evmClient.GetContractCode("0x282EcBadB8F4E33E67797EB880FCB5deb2420305")
+	if err != nil {
+		t.Fatal(err)
+		return
+	}
+	t.Log("code:", contractAddress)
+}
+
+//NFT
+func TestEvmQueryContractCode1(t *testing.T) {
+	s := []byte{0, 56, 186, 161, 81, 12, 72, 66, 253, 236, 59, 168, 122, 58, 205, 205, 225, 180, 113, 180, 255, 17, 56, 245, 225, 166, 255, 91, 240, 35, 84, 112}
+	t.Log(hexutil.Encode(s))
+	aa := "0x7944dfa6Ec9db969BB0b104D64dC6C406F6e81a3"
+	sss := common.HexToAddress(aa).Hash()
+	t.Log(sss.Bytes())
+}
+
+//NFT
+func TestEvmQueryNftContractAddress(t *testing.T) {
+	evmClient := NewEvmClient()
+	contractAddress, err := evmClient.GetNftContractAddress()
+	if err != nil {
+		t.Fatal(err)
+		return
+	}
+	t.Log("nft:", contractAddress)
+}
+
+
 func TestEvmBalance(t *testing.T) {
 	evmClient := NewEvmClient()
 	addr := "0xA825B785B7DA1C771EA2CFA51D475E73ABDF8212"
@@ -30,7 +76,7 @@ func TestBlockNumber(t *testing.T) {
 	t.Log(res.ToInt())
 }
 
-//
+
 func TestGetBlockNumber(t *testing.T) {
 	evmClient := NewEvmClient()
 	res, err := evmClient.GetBlockNumber("1289", true)
@@ -56,7 +102,7 @@ func TestGetBlockNumber(t *testing.T) {
 	}
 }
 
-//
+
 func TestGetTransactionReceipt(t *testing.T) {
 	evmClient := NewEvmClient()
 	addr := "0xb9cc59d6fa8056f262a9e50f4273da898a0d4f5dc6a1300bf860c3efc3580e88"
@@ -72,7 +118,7 @@ func TestGetTransactionReceipt(t *testing.T) {
 	}
 }
 
-//
+
 func TestGetTransactionByHash(t *testing.T) {
 	evmClient := NewEvmClient()
 	addr := "0xb9cc59d6fa8056f262a9e50f4273da898a0d4f5dc6a1300bf860c3efc3580e88"
@@ -102,7 +148,7 @@ func TestGetTransactionByHash(t *testing.T) {
 	}
 }
 
-//
+
 func TestEvmAddress(t *testing.T) {
 	evmClient := NewEvmClient()
 	address, err := evmClient.GetAddress()
@@ -126,7 +172,7 @@ func TestNetPeerCount(t *testing.T) {
 	t.Log(":", count)
 }
 
-//
+
 func TestEthEncode(t *testing.T) {
 	addBytes := ethcrypto.Keccak256([]byte("add()"))
 	t.Log(hexutil.Encode(addBytes))
