@@ -1,0 +1,26 @@
+syntax = "proto3";
+package freemasonry.chat.v1;
+
+import "google/api/annotations.proto";
+import "gogoproto/gogo.proto";
+
+option go_package = "freemasonry.cc/blockchain/x/chat/types";
+
+// Query defines the gRPC querier service.
+service Query {
+  // TokenPairs retrieves registered token pairs
+  rpc TestQuery(TestQueryRequest) returns (TestQueryResponse) {
+
+  }
+}
+
+// QueryTokenPairsRequest is the request type for the Query/TokenPairs RPC
+// method.
+message TestQueryRequest {
+}
+
+// QueryTokenPairsResponse is the response type for the Query/TokenPairs RPC
+// method.
+message TestQueryResponse {
+  string testR = 1;
+}
