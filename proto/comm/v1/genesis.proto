@@ -1,0 +1,17 @@
+syntax = "proto3";
+package freemasonry.comm.v1;
+
+import "google/api/annotations.proto";
+import "gogoproto/gogo.proto";
+import "comm/v1/gateway.proto";
+
+option go_package = "freemasonry.cc/blockchain/x/comm/types";
+option (gogoproto.marshaler_all) = true;
+option (gogoproto.unmarshaler_all) = true;
+option (gogoproto.sizer_all) = true;
+
+// GenesisState defines the module's genesis state.
+message GenesisState {
+  // module parameters
+  Params params = 1 [ (gogoproto.nullable) = false ];
+}
