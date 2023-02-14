@@ -1,0 +1,98 @@
+syntax = "proto3";
+package freemasonry.pledge.v1;
+
+option go_package = "freemasonry.cc/blockchain/x/pledge/types";
+option (gogoproto.marshaler_all) = true;
+option (gogoproto.unmarshaler_all) = true;
+option (gogoproto.sizer_all) = true;
+import "gogoproto/gogo.proto";
+//import "google/protobuf/duration.proto";
+import "cosmos/base/v1beta1/coin.proto";
+// Minter represents the minting state.
+message Minter {
+  // current annual inflation rate
+  string inflation = 1
+      [(gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec", (gogoproto.nullable) = false];
+  // current annual expected provisions
+  string annual_provisions = 2 [
+    (gogoproto.moretags)   = "yaml:\"annual_provisions\"",
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
+    (gogoproto.nullable)   = false
+  ];
+}
+
+message PledgeLevel {
+  int64 level = 1 [(gogoproto.moretags) = "yaml:\"level\""];
+  string pledge_amount = 2 [
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Int",
+    (gogoproto.moretags)   = "yaml:\"pledge_amount\"",
+    (gogoproto.nullable)   = false
+  ];
+}
+
+// Params holds parameters for the mint module.
+message Params {
+  /****** Mint Params ******/
+
+  // maximum annual change in inflation rate
+  string inflation_rate_change = 1 [
+    (gogoproto.moretags)   = "yaml:\"inflation_rate_change\"",
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
+    (gogoproto.nullable)   = false
+  ];
+  // maximum inflation rate
+  string inflation_max = 2 [
+    (gogoproto.moretags)   = "yaml:\"inflation_max\"",
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
+    (gogoproto.nullable)   = false
+  ];
+  // minimum inflation rate
+  string inflation_min = 3 [
+    (gogoproto.moretags)   = "yaml:\"inflation_min\"",
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
+    (gogoproto.nullable)   = false
+  ];
+  // goal of percent bonded atoms
+  string goal_bonded = 4 [
+    (gogoproto.moretags)   = "yaml:\"goal_bonded\"",
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
+    (gogoproto.nullable)   = false
+  ];
+  // expected blocks per year
+  uint64 blocks_per_year = 5 [(gogoproto.moretags) = "yaml:\"blocks_per_year\""];
+
+  /****** Stake Params ******/
+  //uint32 historical_entries = 7 [(gogoproto.moretags) = "yaml:\"historical_entries\""];
+
+
+
+  //distribution Params
+
+  //custom Params
+  cosmos.base.v1beta1.Coin minMortgageCoin = 7 [(gogoproto.nullable) = false,(gogoproto.moretags) = "yaml:\"min_mortgage_coin\""];
+
+  //att 
+  string attDestroyPercent                = 8 [
+    (gogoproto.moretags)   = "yaml:\"att_destroy_percent\"",
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
+    (gogoproto.nullable)   = false
+  ];
+
+  //att 
+  string attGatewayPercent                = 9 [
+    (gogoproto.moretags)   = "yaml:\"att_gateway_percent\"",
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
+    (gogoproto.nullable)   = false
+  ];
+  //att dpos
+  string attDposPercent                = 10 [
+    (gogoproto.moretags)   = "yaml:\"att_dpos_percent\"",
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
+    (gogoproto.nullable)   = false
+  ];
+
+  
+  repeated PledgeLevel pledgeLevels = 11 [ (gogoproto.nullable) = false ];
+
+  int64 unbonding_height = 12 [(gogoproto.moretags) = "yaml:\"unbonding_height\""];
+}

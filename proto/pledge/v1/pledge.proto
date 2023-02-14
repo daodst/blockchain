@@ -1,0 +1,16 @@
+syntax = "proto3";
+package freemasonry.pledge.v1;
+import "gogoproto/gogo.proto";
+
+option go_package = "freemasonry.cc/blockchain/x/pledge/types";
+
+message PledgeDelegate {
+  option (gogoproto.goproto_getters)  = false;
+  option (gogoproto.goproto_stringer) = true;
+  
+  string address = 1;
+  
+  string gateway_address = 2;
+  
+  string amount = 3;
+}
