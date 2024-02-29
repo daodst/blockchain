@@ -39,21 +39,30 @@ type BlockClient struct {
 	logPrefix string
 }
 
-/**
+/*
+*
 
 */
 func (this *BlockClient) Block(height int64) (blockData *coretypes.ResultBlock, err error) {
 	log := core.BuildLog(core.GetStructFuncName(this), core.LmChainClient).WithField("height", height)
+
+	var paramsHeight *int64
+	paramsHeight = &height
+	if height == 0 {
+		paramsHeight = nil
+	}
+
 	node, err := clientCtx.GetNode()
 	if err != nil {
 		log.WithError(err).Error("GetNode")
 		return nil, err
 	}
 	
-	return node.Block(context.Background(), &height)
+	return node.Block(context.Background(), paramsHeight)
 }
 
-/**
+/*
+*
 ctxClient
 */
 func (this *BlockClient) Find(height int64) (blockData *Block, err error) {
@@ -146,4 +155,16 @@ func (this *BlockClient) GetSyncInfo() (blockData *coretypes.SyncInfo, err error
 		return nil, err
 	}
 	return &nodeStatus.SyncInfo, nil
+}
+
+
+func (this *BlockClient) StatusInfo() (statusInfo *coretypes.ResultStatus, err error) {
+	node, err := clientCtx.GetNode()
+	return node.Status(context.Background())
+}
+
+
+func (this *BlockClient) NetInfo() (statusInfo *coretypes.ResultNetInfo, err error) {
+	node, err := clientCtx.GetNode()
+	return node.NetInfo(context.Background())
 }
