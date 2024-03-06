@@ -4,16 +4,15 @@ import (
 	"bytes"
 	"errors"
 	"freemasonry.cc/blockchain/util"
-	"github.com/cosmos/cosmos-sdk/client"
 	clienttx "github.com/cosmos/cosmos-sdk/client/tx"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/x/auth/legacy/legacytx"
-	"github.com/cosmos/cosmos-sdk/x/auth/signing"
+	"github.com/cosmos/cosmos-sdk/x/auth/migrations/legacytx"
+	xauthsigning "github.com/cosmos/cosmos-sdk/x/auth/signing"
+	ttypes "github.com/tendermint/tendermint/types"
 	"net/url"
 	"strconv"
 	"strings"
 	"time"
-
 	//"fmt"
 	"io/ioutil"
 	"net/http"
@@ -50,7 +49,7 @@ func GetRequest(server, params string) (string, error) {
 	client := http.Client{
 		Transport: &http.Transport{
 			DisableKeepAlives:   true, //true:HTTPTCP（http1.1，）
-			MaxIdleConnsPerHost: 512,  //
+			MaxIdleConnsPerHost: 512,  
 		},
 		Timeout: time.Second * 60, //Client,、response body;Timeout
 	}
@@ -84,7 +83,7 @@ func PostValuesRequest(server, url string, values url.Values) (string, error) {
 	client := http.Client{
 		Transport: &http.Transport{
 			DisableKeepAlives:   true, //true:HTTPTCP（http1.1，）
-			MaxIdleConnsPerHost: 512,  //
+			MaxIdleConnsPerHost: 512,  
 		},
 		Timeout: time.Second * 60, //Client,、response body;Timeout
 	}
@@ -115,13 +114,13 @@ func PostValuesRequest(server, url string, values url.Values) (string, error) {
 }
 
 /**
-get
+post
 */
 func PostRequest(server, url string, params []byte) (string, error) {
 	client := http.Client{
 		Transport: &http.Transport{
 			DisableKeepAlives:   true, //true:HTTPTCP（http1.1，）
-			MaxIdleConnsPerHost: 512,  //
+			MaxIdleConnsPerHost: 512,  
 		},
 		Timeout: time.Second * 60, //Client,、response body;Timeout
 	}
@@ -153,7 +152,7 @@ func PostRequestByTimeout(server, url string, params []byte, timeout time.Durati
 	client := http.Client{
 		Transport: &http.Transport{
 			DisableKeepAlives:   true, //true:HTTPTCP（http1.1，）
-			MaxIdleConnsPerHost: 512,  //
+			MaxIdleConnsPerHost: 512,  
 		},
 		Timeout: timeout, //Client,、response body;Timeout
 	}
@@ -203,8 +202,17 @@ tx StdTx
 //	return stdTx, txhashHex, nil
 //}
 
-func txToStdTx(clientCtx client.Context, tx sdk.Tx) (*legacytx.StdTx, error) {
-	signingTx, ok := tx.(signing.Tx)
+//msg
+func unmarshalMsg(msg sdk.Msg, obj interface{}) error {
+	msgByte, err := util.Json.Marshal(msg)
+	if err != nil {
+		return err
+	}
+	return util.Json.Unmarshal(msgByte, &obj)
+}
+
+func convertTxToStdTx(cosmosTx sdk.Tx) (*legacytx.StdTx, error) {
+	signingTx, ok := cosmosTx.(xauthsigning.Tx)
 	if !ok {
 		return nil, errors.New("tx to stdtx error")
 	}
@@ -215,11 +223,12 @@ func txToStdTx(clientCtx client.Context, tx sdk.Tx) (*legacytx.StdTx, error) {
 	return &stdTx, nil
 }
 
-//msg
-func unmarshalMsg(msg sdk.Msg, obj interface{}) error {
-	msgByte, err := util.Json.Marshal(msg)
-	if err != nil {
-		return err
-	}
-	return util.Json.Unmarshal(msgByte, &obj)
+// tx tendermint tx  cosmos  tx
+func termintTx2CosmosTx(signTxs ttypes.Tx) (sdk.Tx, error) {
+	return clientCtx.TxConfig.TxDecoder()(signTxs)
+}
+
+// tx
+func signTx2Bytes(signTxs xauthsigning.Tx) ([]byte, error) {
+	return clientCtx.TxConfig.TxEncoder()(signTxs)
 }
