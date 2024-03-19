@@ -1,13 +1,25 @@
 package client
 
 import (
+	"freemasonry.cc/blockchain/core"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	ethcrypto "github.com/ethereum/go-ethereum/crypto"
 	"testing"
 )
 
-//NFT
+
+func TestEvmTokenPair(t *testing.T) {
+	evmClient := NewEvmClient()
+	tokenPair, err := evmClient.GetTokenPair(core.UsdtDenom)
+	if err != nil {
+		t.Fatal(err)
+		return
+	}
+	t.Log("tokenPair:", tokenPair.String())
+}
+
+// NFT
 func TestEvmNft(t *testing.T) {
 	evmClient := NewEvmClient()
 	addr := "dex1va8aaeystat4twpy70ns7235pxwczg0698twv4"
@@ -21,7 +33,7 @@ func TestEvmNft(t *testing.T) {
 	t.Log("nft:", nft)
 }
 
-//NFT
+// NFT
 func TestEvmQueryContractCode(t *testing.T) {
 	evmClient := NewEvmClient()
 	contractAddress, err := evmClient.GetContractCode("0x282EcBadB8F4E33E67797EB880FCB5deb2420305")
@@ -32,7 +44,7 @@ func TestEvmQueryContractCode(t *testing.T) {
 	t.Log("code:", contractAddress)
 }
 
-//NFT
+// NFT
 func TestEvmQueryContractCode1(t *testing.T) {
 	s := []byte{0, 56, 186, 161, 81, 12, 72, 66, 253, 236, 59, 168, 122, 58, 205, 205, 225, 180, 113, 180, 255, 17, 56, 245, 225, 166, 255, 91, 240, 35, 84, 112}
 	t.Log(hexutil.Encode(s))
@@ -41,7 +53,7 @@ func TestEvmQueryContractCode1(t *testing.T) {
 	t.Log(sss.Bytes())
 }
 
-//NFT
+// NFT
 func TestEvmQueryNftContractAddress(t *testing.T) {
 	evmClient := NewEvmClient()
 	contractAddress, err := evmClient.GetNftContractAddress()
@@ -65,7 +77,7 @@ func TestEvmBalance(t *testing.T) {
 	t.Log(":", balance.ToInt())
 }
 
-//eth
+// eth
 func TestBlockNumber(t *testing.T) {
 	evmClient := NewEvmClient()
 	res, err := evmClient.BlockNumber()
@@ -179,5 +191,13 @@ func TestEthEncode(t *testing.T) {
 	//t.Log(addBytes)
 	subtractBytes := ethcrypto.Keccak256([]byte("subtract()"))
 	t.Log(hexutil.Encode(subtractBytes))
+
+}
+
+func TestQueryCrossHash(t *testing.T) {
+	cl := NewEvmClient()
+	isExist, err := cl.QueryCrossChainHash("dex18mfr9qdq2m2yjdvywme5nkyct7lltmeflfd6ag", "123")
+	t.Log(err)
+	t.Log(isExist)
 
 }
