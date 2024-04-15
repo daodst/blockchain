@@ -1,15 +1,15 @@
 package keeper
 
 import (
+	"encoding/json"
 	"fmt"
-	"freemasonry.cc/blockchain/cmd/config"
 	"freemasonry.cc/blockchain/core"
-	commkeeper "freemasonry.cc/blockchain/x/comm/keeper"
-	types2 "freemasonry.cc/blockchain/x/comm/types"
-	pledgekeeper "freemasonry.cc/blockchain/x/pledge/keeper"
+	types3 "freemasonry.cc/blockchain/x/contract/types"
+	gatewaykeeper "freemasonry.cc/blockchain/x/gateway/keeper"
+	types2 "freemasonry.cc/blockchain/x/gateway/types"
 	"github.com/cosmos/cosmos-sdk/codec"
+	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	"github.com/tendermint/tendermint/libs/log"
 	"strconv"
@@ -20,25 +20,23 @@ import (
 
 // Keeper of this module maintains collections of erc20.
 type Keeper struct {
-	storeKey   sdk.StoreKey
+	storeKey   storetypes.StoreKey
 	cdc        codec.BinaryCodec
 	paramstore paramtypes.Subspace
 
 	accountKeeper types.AccountKeeper
 	bankKeeper    types.BankKeeper
-	commKeeper    commkeeper.Keeper
-	pledgeKeeper  pledgekeeper.Keeper
+	commKeeper    gatewaykeeper.Keeper
 }
 
 // NewKeeper creates new instances of the erc20 Keeper
 func NewKeeper(
-	storeKey sdk.StoreKey,
+	storeKey storetypes.StoreKey,
 	cdc codec.BinaryCodec,
 	ps paramtypes.Subspace,
 	ak types.AccountKeeper,
 	bk types.BankKeeper,
-	cm commkeeper.Keeper,
-	pk pledgekeeper.Keeper,
+	cm gatewaykeeper.Keeper,
 ) Keeper {
 	// set KeyTable if it has not already been set
 	if !ps.HasKeyTable() {
@@ -52,7 +50,6 @@ func NewKeeper(
 		accountKeeper: ak,
 		bankKeeper:    bk,
 		commKeeper:    cm,
-		pledgeKeeper:  pk,
 	}
 }
 
@@ -68,116 +65,155 @@ func (k Keeper) KVHelper(ctx sdk.Context) storeHelper {
 	}
 }
 
+
+func (k Keeper) Register(ctx sdk.Context, regAddr, regChatAddr, gateawyAddr string, getDid []string) error {
+
+	logs := core.BuildLog(core.GetStructFuncName(k), core.LmChainMsgServer)
+
+	if _, err := sdk.AccAddressFromBech32(regAddr); err != nil {
+		return core.ErrAddressFormat
+	}
+
+	
+	gatewayInfo, err := k.commKeeper.GetGatewayInfo(ctx, gateawyAddr)
+	if err != nil {
+		logs.WithError(err).Error("chat.Register GetGatewayInfo err")
+		return core.ErrGetGatewauInfo
+	}
+
+	
+	if gatewayInfo.Status == 1 {
+		logs.Error("chat.Register Validator Status Err")
+		return core.ErrValidatorStatusError
+	}
+
+	
+	userInfo, err := k.GetRegisterInfo(ctx, regAddr)
+	if err != core.ErrUserNotFound {
+		logs.WithError(err).Error("Register GetRegisterInfo already exist err")
+		return err
+	}
+
+	
+	userInfo.NodeAddress = gateawyAddr
+	userInfo.RegisterNodeAddress = gateawyAddr
+	userInfo.FromAddress = regAddr
+
+	if len(getDid) != 0 {
+		//todo did
+
+		//userInfo.Mobile = append(userInfo.Mobile, getDid)
+	}
+
+	err = k.SetRegisterInfo(ctx, userInfo)
+	if err != nil {
+		logs.WithError(err).Error("SetRegisterInfo err")
+		return core.ErrRegister
+	}
+
+	
+	err = k.SetChatAddr(ctx, regChatAddr, regAddr)
+	if err != nil {
+		return err
+	}
+
+	
+	ctx.EventManager().EmitEvents(
+		[]sdk.Event{
+			
+			sdk.NewEvent(
+				types.EventTypeRegister,
+				
+				sdk.NewAttribute(types.EventTypeRegAddress, regAddr),
+				
+				sdk.NewAttribute(types.EventTypeGatewayAddress, gateawyAddr),
+				
+				sdk.NewAttribute(types.EventPrefixMobile, gatewayInfo.GatewayNum[0].NumberIndex),
+				
+				sdk.NewAttribute(types.EventTypeChatAddress, regChatAddr),
+			),
+		},
+	)
+
+	return nil
+}
+
 func (k Keeper) GetRegisterInfo(ctx sdk.Context, fromAddress string) (userinfo types.UserInfo, err error) {
+	logs := core.BuildLog(core.GetStructFuncName(k), core.LmChainChatKeeper)
 
 	store := k.KVHelper(ctx)
 	key := types.KeyPrefixRegisterInfo + fromAddress
 	if store.Has(key) {
-
 		err := store.GetUnmarshal(key, &userinfo)
 		if err != nil {
+			logs.WithError(err).Error("GetUnmarshal")
 			return types.UserInfo{}, err
 		}
 
 		return userinfo, nil
 
 	} else {
-
-		return types.UserInfo{}, types.ErrUserNotFound
+		logs.WithError(core.ErrUserNotFound).WithField("from:", fromAddress).Error("GetRegisterInfo")
+		return types.UserInfo{}, core.ErrUserNotFound
 
 	}
 }
 
 func (k Keeper) SetRegisterInfo(ctx sdk.Context, userInfo types.UserInfo) error {
+	logs := core.BuildLog(core.GetStructFuncName(k), core.LmChainChatKeeper)
+
+	if userInfo.FromAddress == "" {
+		return core.ErrUserUpdate
+	}
 
 	store := k.KVHelper(ctx)
+
 	key := types.KeyPrefixRegisterInfo + userInfo.FromAddress
 
 	err := store.Set(key, userInfo)
 	if err != nil {
-		return err
+		logs.WithError(err).WithField("from:", userInfo.FromAddress).Error("SetRegisterInfo Err")
+		return core.ErrUserUpdate
 	}
 
 	return nil
 }
 
-// ChatPoundage ，（coin）
-func (k Keeper) ChatPoundage(ctx sdk.Context, accFromAddress, nodeAddress sdk.AccAddress, distCoin sdk.Coin) (sdk.Dec, error) {
 
-	//Dec
-	AllCoinDec := distCoin.Amount.ToDec()
-
-	//
-	chatParams := k.pledgeKeeper.GetParams(ctx)
-
-	//
-	destroyDec := AllCoinDec.Mul(chatParams.AttDestroyPercent)
-	//
-	gatewayDec := AllCoinDec.Mul(chatParams.AttGatewayPercent)
-	//dpos
-	DPosDec := AllCoinDec.Mul(chatParams.AttDposPercent)
-	//
-	feeAllInt := destroyDec.TruncateInt().Add(gatewayDec.TruncateInt()).Add(DPosDec.TruncateInt())
-	feeAllDec := feeAllInt.ToDec()
-
-	feeCoin := sdk.NewCoin(distCoin.Denom, feeAllInt)
-
-	// 
-	err := k.bankKeeper.SendCoinsFromAccountToModule(ctx, accFromAddress, types.ModuleName, sdk.NewCoins(feeCoin))
-	if err != nil {
-		return sdk.Dec{}, types.ErrPledgeFeeTransfer
-	}
-
-	//
-	err = k.bankKeeper.BurnCoins(ctx, types.ModuleName, sdk.NewCoins(sdk.NewCoin(distCoin.Denom, destroyDec.TruncateInt())))
-	if err != nil {
-		return sdk.Dec{}, types.ErrPledgeFeeBurn
-	}
-	//
-	err = k.bankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, nodeAddress, sdk.NewCoins(sdk.NewCoin(distCoin.Denom, gatewayDec.TruncateInt())))
-	if err != nil {
-		return sdk.Dec{}, types.ErrPledgeFeeGateway
-	}
-	//dpos
-	err = k.bankKeeper.SendCoinsFromModuleToModule(ctx, types.ModuleName, authtypes.FeeCollectorName, sdk.NewCoins(sdk.NewCoin(distCoin.Denom, DPosDec.TruncateInt())))
-	if err != nil {
-		return sdk.Dec{}, types.ErrPledgeFeeDpos
-	}
-
-	return feeAllDec, nil
-}
-
-//
 func (k Keeper) RegisterMobile(ctx sdk.Context, nodeAddress, fromAddress, mobilePrefix string) (mobile string, err error) {
 
-	//log := core.BuildLog(core.GetFuncName(), core.LmChainChatKeeper)
+	logs := core.BuildLog(core.GetStructFuncName(k), core.LmChainChatKeeper)
 
-	//
+	
 	GatewayNumInfo, _, err := k.commKeeper.GetGatewayNum(ctx, mobilePrefix)
 
 	if err != nil {
-		return mobile, types.ErrGeneratingMobile
+		logs.WithError(err).Info("Err GetGatewayNum: err")
+		return mobile, core.ErrNumberOfGateWay
 	}
 
 	if GatewayNumInfo == nil {
-		return mobile, types.ErrGetMobile
+		logs.WithError(core.ErrNumberOfGateWay).Info("Err GetGatewayNum: nil")
+		return mobile, core.ErrGetMobile
 	}
 
 	if GatewayNumInfo.GatewayAddress != nodeAddress || GatewayNumInfo.Status != 0 {
-		return mobile, types.ErrGateway
+		logs.WithError(core.ErrNumberOfGateWay).Info("Err GetGatewayNum: status or address")
+		return mobile, core.ErrGateway
 	}
 
-	//
+	
 	mobileSuffixInt := len(GatewayNumInfo.NumberEnd)
 
 	if mobileSuffixInt >= types.MobileSuffixMax {
-		return mobile, types.ErrGetMobile
+		logs.WithError(core.ErrGetMobile).Info("Err MobileSuffixMax:", mobileSuffixInt)
+		return mobile, core.ErrMobileexhausted
 	}
 
-	//
+	
 	mobileSuffixString := strconv.Itoa(mobileSuffixInt)
 
-	//
+	
 	mobileSuffixString = strings.Repeat("0", types.MobileSuffixLength-len(mobileSuffixString)) + mobileSuffixString
 
 	mobile = mobilePrefix + mobileSuffixString
@@ -186,243 +222,239 @@ func (k Keeper) RegisterMobile(ctx sdk.Context, nodeAddress, fromAddress, mobile
 	GatewayNumInfos := []types2.GatewayNumIndex{
 		*GatewayNumInfo,
 	}
-	//
+	
 	err = k.commKeeper.SetGatewayNum(ctx, GatewayNumInfos)
 	if err != nil {
-		return mobile, types.ErrMobileSetError
+		logs.WithError(err).Info("Err SetGatewayNum")
+		return mobile, core.ErrMobileSetError
 	}
-	//
+	
 	err = k.commKeeper.UpdateGatewayNum(ctx, GatewayNumInfos)
 	if err != nil {
+		logs.WithError(err).Info("Err UpdateGatewayNum")
 		return mobile, err
 	}
+
+	
+	err = k.SetMobileOwner(ctx, mobile, fromAddress)
+	if err != nil {
+		logs.WithError(err).Info("Err SetMobileOwner")
+		return mobile, err
+	}
+
 	return mobile, nil
 }
 
-// CaculateChatReward 
-/*
-	var newAmountDec = 
+func (k Keeper) GetUserByMobile(ctx sdk.Context, mobile string) (string, error) {
 
-	for  {
-		for ， ratio
-		for ，（） mortgageAmount
-
-		//，
-		 =  + （ * ）
-		newAmountDec = newAmountDec + mortgageAmount * ratio
-	}
-
-	（Dec -> sdk.Coin）
-	return newAmountCoin
-*/
-func (k Keeper) CaculateChatReward(ctx sdk.Context, fromAddress string, chatRewardChangeLog []types.ChatReward, canRedemAmount sdk.Coin) (reward sdk.Coin, err error) {
-	logs := core.BuildLog(core.GetFuncName(), core.LmChainChatKeeper)
-	//
-	mortgageLog, err := k.GetMortgageLog(ctx, fromAddress)
-	if err != nil {
-		return reward, err
-	}
-
-	logs.Info(":", mortgageLog)
-
-	//(comm)
-	commParams := k.commKeeper.GetParams(ctx)
-
-	HeightPerDay := commParams.BonusCycle
-
-	logs.Info(":", HeightPerDay)
-
-	//
-	LastGetInfo, err := k.GetLastGetHeight(ctx, fromAddress)
-	if err != nil {
-		return reward, err
-	}
-
-	logs.Info(":", LastGetInfo)
-
-	//
-	NowHeight := ctx.BlockHeight()
-
-	logs.Info(":", NowHeight)
-
-	newAmountDec := canRedemAmount.Amount.ToDec()
-	//LastGetInfo.Height()  NowHeight（） ， HeightPerDay（）
-	//
-	for SendBonusHeight := GetCommonMultipleGt(LastGetInfo.Height, HeightPerDay); SendBonusHeight < NowHeight; SendBonusHeight += HeightPerDay {
-
-		//，
-		var ratio sdk.Dec
-		for changeIndex, chatReward := range chatRewardChangeLog {
-
-			//
-			if SendBonusHeight >= chatReward.Height {
-				if HasIndex(changeIndex+1, chatRewardChangeLog) { //
-					if SendBonusHeight >= chatRewardChangeLog[changeIndex+1].Height { //，
-						continue
-					} else {
-						ratio, err = sdk.NewDecFromStr(chatReward.Value) //，
-						if err != nil {
-							return reward, types.ErrGetBonus
-						}
-					}
-				} else { //,
-					ratio, err = sdk.NewDecFromStr(chatReward.Value)
-					if err != nil {
-						return reward, types.ErrGetBonus
-					}
-				}
-			}
-
-		}
-
-		//， （SendBonusHeight）
-		mortgageAmount := sdk.NewCoin(mortgageLog[0].MortgageValue.Denom, sdk.ZeroInt()) //0
-		for _, addLog := range mortgageLog {
-
-			//， ，
-			if addLog.Height < SendBonusHeight-HeightPerDay {
-				mortgageAmount = addLog.MortgageValue
-			} else {
-				break
-			}
-		}
-
-		logs.Info("-----------------")
-		logs.Info("---:", SendBonusHeight)
-		logs.Info("---:", ratio)
-		logs.Info("---:", mortgageAmount)
-		logs.Info("---:", newAmountDec)
-
-		// =  +  * 
-		newAmountDec = newAmountDec.Add(mortgageAmount.Amount.ToDec().Mul(ratio))
-		logs.Info("---:", newAmountDec)
-		logs.Info("-----------------")
-	}
-
-	logs.Info("：", newAmountDec)
-	return sdk.NewCoin(LastGetInfo.Value.Denom, newAmountDec.TruncateInt()), nil
-}
-
-// a  b 
-func GetCommonMultipleGt(a, b int64) int64 {
-	return (a/b + 1) * b
-}
-
-//
-func HasIndex(index int, data []types.ChatReward) bool {
-	return len(data) > index
-}
-
-func (k Keeper) GetLastGetHeight(ctx sdk.Context, fromAddress string) (types.LastReceiveLog, error) {
+	logs := core.BuildLog(core.GetStructFuncName(k), core.LmChainChatKeeper)
 	store := k.KVHelper(ctx)
-	key := types.KeyPrefixLastGetRewardLog + fromAddress
+	key := types.KeyPrefixMobileOwner + mobile
 
-	logs := types.LastReceiveLog{
-		Height: 1,
-		Value:  sdk.NewCoin(config.BaseDenom, sdk.NewInt(0)),
-	}
-
+	var fromAddress string
 	if store.Has(key) {
 
-		err := store.GetUnmarshal(key, &logs)
-		if err != nil {
-			return logs, types.ErrGetLastReveiveHeight
+		addressByte := store.Get(key)
+		fromAddress = string(addressByte)
+		if fromAddress == "" {
+			logs.WithError(core.ErrUserNotFound).Error("GetUserByMobile")
+			return "", core.ErrUserNotFound
 		}
-		return logs, nil
-	}
+		return fromAddress, nil
 
-	return logs, nil
-}
-
-func (k Keeper) SetLastGetHeight(ctx sdk.Context, fromAddress string, height int64, mortgage sdk.Coin) error {
-
-	store := k.KVHelper(ctx)
-	key := types.KeyPrefixLastGetRewardLog + fromAddress
-
-	err := store.Set(key, types.LastReceiveLog{
-		Height: height,
-		Value:  mortgage,
-	})
-
-	if err != nil {
-		return types.ErrSetLastReveiveHeight
-	}
-
-	//log := types.LastReceiveLog{
-	//	Height: 1,
-	//	Value:  sdk.NewCoin(config.BaseDenom, sdk.NewInt(0)),
-	//}
-	//store.GetUnmarshal(key, &log)
-	//
-	//fmt.Println("log:", log)
-
-	return nil
-}
-
-func (k Keeper) SetMortgageLog(ctx sdk.Context, fromAddress string, mortgageNew sdk.Coin) error {
-
-	//logs := core.BuildLog(core.GetFuncName(), core.LmChainChatKeeper)
-
-	store := k.KVHelper(ctx)
-	key := types.KeyPrefixMortgageAddLog + fromAddress
-
-	logNew := types.MortgageAddLog{
-		Height:        ctx.BlockHeight(),
-		MortgageValue: mortgageNew,
-	}
-	logs := make([]types.MortgageAddLog, 0)
-
-	if store.Has(key) {
-		err := store.GetUnmarshal(key, &logs)
-		if err != nil {
-			return types.ErrSetMortgageLog
-		}
-
-		//
-		mortgageAddLogCheck := k.CheckMortgageAddLog(ctx, logs, logNew)
-		if !mortgageAddLogCheck {
-			return types.ErrSetMortgageLog
-		}
-
-	}
-
-	logs = append(logs, logNew)
-	err := store.Set(key, logs)
-	if err != nil {
-		return types.ErrSetMortgageLog
-	}
-
-	return nil
-}
-
-func (k Keeper) GetMortgageLog(ctx sdk.Context, fromAddress string) ([]types.MortgageAddLog, error) {
-	store := k.KVHelper(ctx)
-	key := types.KeyPrefixMortgageAddLog + fromAddress
-
-	logs := make([]types.MortgageAddLog, 0)
-	if store.Has(key) {
-		err := store.GetUnmarshal(key, &logs)
-		if err != nil {
-			return logs, types.ErrGetMortgageLog
-		}
 	} else {
-		return logs, types.ErrUserNotFound
+		logs.WithError(core.ErrUserNotFound).Error("GetUserByMobile")
+		return fromAddress, core.ErrMobileNotFount
+
 	}
-	return logs, nil
 }
 
-func (k Keeper) CheckMortgageAddLog(ctx sdk.Context, log []types.MortgageAddLog, logNew types.MortgageAddLog) bool {
+func (k Keeper) SetMobileOwner(ctx sdk.Context, mobile, address string) error {
+	logs := core.BuildLog(core.GetStructFuncName(k), core.LmChainChatKeeper)
 
-	lastMortgageInfo := log[len(log)-1]
-	//
-	if lastMortgageInfo.Height >= logNew.Height {
-		return false
+	KeyMobileOwner := types.KeyPrefixMobileOwner + mobile
+	store := k.KVHelper(ctx)
+	err := store.Set(KeyMobileOwner, address)
+	if err != nil {
+		logs.WithError(core.ErrSetMobileOwner).Error("SetMobileOwner Err")
+		return core.ErrSetMobileOwner
+	}
+	return nil
+}
+
+func (k Keeper) GetUserInfos(ctx sdk.Context, fromAddresses []string) (userInfos []types.AllUserInfo, err error) {
+	//logs := core.BuildLog(core.GetStructFuncName(k), core.LmChainChatKeeper)
+	
+	//store := k.KVHelper(ctx)
+	
+	//for _, address := range fromAddresses {
+	//	accAddress, err := sdk.AccAddressFromBech32(address)
+	//	if err != nil {
+	//		return nil, err
+	//	}
+	
+	//	key := types.KeyPrefixRegisterInfo + address
+	//	if store.Has(key) {
+	//		var userInfo types.UserInfo
+	//		err := store.GetUnmarshal(key, &userInfo)
+	//		if err != nil {
+	//			return nil, err
+	//		}
+	
+	//		
+	//		var gatewayProfixMobile string
+	//		gateWayInfo, err := k.commKeeper.GetGatewayInfo(ctx, userInfo.NodeAddress)
+	//		if err != nil {
+	//			logs.WithError(err).Error("GetGatewayInfo err")
+	//			return nil, err
+	//		}
+	
+	//		if gateWayInfo.Status == 1 {
+	//			gatewayProfixMobile = ""
+	//		}
+	
+	//		gatewayProfixMobile = gateWayInfo.GatewayNum[0].NumberIndex
+	
+	//		userInfos = append(userInfos, types.AllUserInfo{
+	//			UserInfo:            userInfo,
+	//			IsExist:             0,
+	//			//PledgeLevel:         pledgeLevelInfo.Level,
+	//			GatewayProfixMobile: gatewayProfixMobile,
+	//		})
+	//	} else {
+	//		userInfos = append(userInfos, types.AllUserInfo{
+	//			UserInfo: types.UserInfo{
+	//				FromAddress: address,
+	//			},
+	//			IsExist: 1,
+	//		})
+	//	}
+	//}
+	return nil, nil
+}
+
+//   @dex1zkcz0qal5l60wmxk0fzvffkw32pyj7ze8tgwuk:1888858.fm
+func (k Keeper) GetGatewayProfixMobiles(ctx sdk.Context, addresses []string) []types.CustomInfo {
+	logs := core.BuildLog(core.GetStructFuncName(k), core.LmChainChatKeeper)
+
+	res := make([]types.CustomInfo, 0)
+
+	for _, address := range addresses {
+		
+		userMobile := ""
+		userInfo, err := k.GetRegisterInfo(ctx, address)
+		if err != nil {
+			logs.WithError(err).Error("GetRegisterInfo err:" + address)
+			res = append(res, types.CustomInfo{
+				Address:     address,
+				CommAddress: "",
+				Mobile:      "",
+			})
+			continue
+		}
+
+		if len(userInfo.Mobile) > 0 {
+			userMobile = userInfo.Mobile[0]
+		}
+
+		gatewayAddress := userInfo.NodeAddress
+		gateWayInfo, err := k.commKeeper.GetGatewayInfo(ctx, gatewayAddress)
+		if err != nil {
+			logs.WithError(err).Error("GetGatewayInfo err" + gatewayAddress)
+			res = append(res, types.CustomInfo{
+				Address:     address,
+				CommAddress: "",
+				Mobile:      userMobile,
+			})
+			continue
+		}
+
+		if gateWayInfo.Status == 1 {
+			logs.WithError(core.ErrGetGatewauInfo).Error("GetGateway Status Error" + gatewayAddress)
+			res = append(res, types.CustomInfo{
+				Address:     address,
+				CommAddress: "",
+				Mobile:      userMobile,
+			})
+			continue
+		}
+
+		res = append(res, types.CustomInfo{
+			Address:     address,
+			CommAddress: "@" + address + ":" + gateWayInfo.GatewayNum[0].NumberIndex + "." + core.GovDenom,
+			Mobile:      userMobile,
+		})
+
+	}
+	return res
+}
+
+
+func (k Keeper) SetGatewayIssueToken(ctx sdk.Context, gatewayAddress string, tokenInfo types3.GatewayTokenInfo) error {
+	//log := core.BuildLog(core.GetPackageFuncName(), core.LmChainChatKeeper)
+	store := ctx.KVStore(k.storeKey)
+
+	key := types.KeyPrefixGatewayIssueToken + gatewayAddress
+
+	data, _ := json.Marshal(tokenInfo)
+
+	store.Set([]byte(key), data)
+
+	return nil
+}
+
+
+func (k Keeper) GetGatewayIssueToken(ctx sdk.Context, gatewayAddress string) (*types3.GatewayTokenInfo, error) {
+	//log := core.BuildLog(core.GetPackageFuncName(), core.LmChainChatKeeper)
+	store := ctx.KVStore(k.storeKey)
+
+	key := []byte(types.KeyPrefixGatewayIssueToken + gatewayAddress)
+
+	if store.Has(key) {
+
+		resp := types3.GatewayTokenInfo{}
+
+		data := store.Get(key)
+
+		err := json.Unmarshal(data, &resp)
+
+		if err != nil {
+			return nil, err
+		}
+
+		return &resp, nil
+
 	}
 
-	//
-	if lastMortgageInfo.MortgageValue.Amount.GT(logNew.MortgageValue.Amount) {
-		return false
+	return nil, core.ErrTokenNotFound
+}
+
+func (k Keeper) SetChatAddr(ctx sdk.Context, chatAddress, fromAddress string) error {
+	store := ctx.KVStore(k.storeKey)
+
+	key := []byte(types.KeyChatAddress + chatAddress)
+
+	if store.Has(key) {
+		return core.ErrChatAddressExist
 	}
 
-	return true
+	v := []byte(fromAddress)
+
+	store.Set(key, v)
+
+	return nil
+}
+
+func (k Keeper) GetAddrFromChatAddr(ctx sdk.Context, chatAddress string) (string, error) {
+	store := ctx.KVStore(k.storeKey)
+
+	key := []byte(types.KeyChatAddress + chatAddress)
+
+	if !store.Has(key) {
+		return "", core.ErrChatAddressNotExist
+	}
+
+	vb := store.Get(key)
+
+	return string(vb), nil
 }
