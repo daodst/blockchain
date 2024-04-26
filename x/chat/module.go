@@ -4,8 +4,6 @@ import (
 	//"context"
 	"encoding/json"
 	"fmt"
-	"freemasonry.cc/blockchain/x/chat/client/rest"
-	"github.com/cosmos/cosmos-sdk/client/flags"
 	"math/rand"
 
 	"github.com/cosmos/cosmos-sdk/client"
@@ -15,7 +13,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/types/module"
 	simtypes "github.com/cosmos/cosmos-sdk/types/simulation"
 	authkeeper "github.com/cosmos/cosmos-sdk/x/auth/keeper"
-	"github.com/gorilla/mux"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"github.com/spf13/cobra"
 	abci "github.com/tendermint/tendermint/abci/types"
@@ -46,7 +43,7 @@ func (AppModuleBasic) RegisterLegacyAminoCodec(cdc *codec.LegacyAmino) {
 
 // ConsensusVersion returns the consensus state-breaking version for the module.
 func (AppModuleBasic) ConsensusVersion() uint64 {
-	return 2
+	return 1
 }
 
 // RegisterInterfaces registers interfaces and implementations of the erc20 module.
@@ -71,10 +68,10 @@ func (b AppModuleBasic) ValidateGenesis(cdc codec.JSONCodec, config client.TxEnc
 
 // RegisterRESTRoutes performs a no-op as the erc20 module doesn't expose REST
 // endpoints
-func (AppModuleBasic) RegisterRESTRoutes(clientCtx client.Context, rtr *mux.Router) {
-	clientCtx = clientCtx.WithBroadcastMode(flags.BroadcastSync)
-	rest.RegisterRoutes(clientCtx, rtr)
-}
+//func (AppModuleBasic) RegisterRESTRoutes(clientCtx client.Context, rtr *mux.Router) {
+//	clientCtx = clientCtx.WithBroadcastMode(flags.BroadcastSync)
+//	rest.RegisterRoutes(clientCtx, rtr)
+//}
 
 func (b AppModuleBasic) RegisterGRPCGatewayRoutes(c client.Context, serveMux *runtime.ServeMux) {
 	//if err := types.RegisterQueryHandlerClient(context.Background(), serveMux, types.NewQueryClient(c)); err != nil {
@@ -116,12 +113,8 @@ func (AppModule) Name() string {
 
 func (am AppModule) RegisterInvariants(ir sdk.InvariantRegistry) {}
 
-func (am AppModule) NewHandler() sdk.Handler {
-	return NewHandler(am.keeper)
-}
-
 func (am AppModule) Route() sdk.Route {
-	return sdk.NewRoute(types.RouterKey, am.NewHandler())
+	return sdk.Route{}
 }
 
 func (am AppModule) QuerierRoute() string {
@@ -133,18 +126,7 @@ func (am AppModule) LegacyQuerierHandler(amino *codec.LegacyAmino) sdk.Querier {
 }
 
 func (am AppModule) RegisterServices(cfg module.Configurator) {
-	types.RegisterMsgServer(cfg.MsgServer(), am.keeper)
-	//types.RegisterQueryServer(cfg.QueryServer(), am.keeper)
-	//
-	//migrator := keeper.NewMigrator(am.keeper)
-	//
-	//// NOTE: the migrations below will only run if the consensus version has changed
-	//// since the last release
-	//
-	//// register v1 -> v2 migration
-	//if err := cfg.RegisterMigration(types.ModuleName, 1, migrator.Migrate1to2); err != nil {
-	//	panic(fmt.Errorf("failed to migrate %s to v2: %w", types.ModuleName, err))
-	//}
+	types.RegisterMsgServer(cfg.MsgServer(), keeper.NewMsgServerImpl(am.keeper))
 }
 
 func (am AppModule) BeginBlock(_ sdk.Context, _ abci.RequestBeginBlock) {
