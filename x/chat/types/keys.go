@@ -27,15 +27,23 @@ func init() {
 // prefix bytes for the chat persistent store
 const (
 	// MobileSuffixLength 
-	MobileSuffixLength = 4 //
+	MobileSuffixLength = 4 
 
 	// MobileSuffixMax int
 	MobileSuffixMax = 9999
 
+	
 	KeyPrefixRegisterInfo = "chat_register_info_"
 
-	KeyPrefixLastGetRewardLog = "chat_last_get_reward_log_"
+	
+	KeyPrefixChatSendGift = "chat_send_gift_"
 
-	// KeyPrefixMortgageAddLog 
-	KeyPrefixMortgageAddLog = "chat_mortgage_add_log_"
+	
+	KeyPrefixMobileOwner = "chat_mobile_owner_"
+
+	
+	KeyPrefixGatewayIssueToken = "gateway_issue_token_"
+
+	
+	KeyChatAddress = "chat_address_"
 )
