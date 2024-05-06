@@ -3,7 +3,6 @@ package contract
 import (
 	"encoding/json"
 	"fmt"
-	"freemasonry.cc/blockchain/x/contract/client/rest"
 	"math/rand"
 
 	"github.com/cosmos/cosmos-sdk/client"
@@ -13,7 +12,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/types/module"
 	simtypes "github.com/cosmos/cosmos-sdk/types/simulation"
 	authkeeper "github.com/cosmos/cosmos-sdk/x/auth/keeper"
-	"github.com/gorilla/mux"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"github.com/spf13/cobra"
 	abci "github.com/tendermint/tendermint/abci/types"
@@ -65,12 +63,6 @@ func (b AppModuleBasic) ValidateGenesis(cdc codec.JSONCodec, config client.TxEnc
 	}
 
 	return genesisState.Validate()
-}
-
-// RegisterRESTRoutes performs a no-op as the erc20 module doesn't expose REST
-// endpoints
-func (AppModuleBasic) RegisterRESTRoutes(clientCtx client.Context, rtr *mux.Router) {
-	rest.RegisterRoutes(clientCtx, rtr)
 }
 
 func (b AppModuleBasic) RegisterGRPCGatewayRoutes(c client.Context, serveMux *runtime.ServeMux) {
@@ -130,7 +122,7 @@ func (am AppModule) LegacyQuerierHandler(amino *codec.LegacyAmino) sdk.Querier {
 }
 
 func (am AppModule) RegisterServices(cfg module.Configurator) {
-	//types.RegisterMsgServer(cfg.MsgServer(), keeper.NewMsgServerImpl(am.keeper))
+	types.RegisterMsgServer(cfg.MsgServer(), keeper.NewMsgServerImpl(am.keeper))
 	//types.RegisterQueryServer(cfg.QueryServer(), am.keeper)
 	
 	//migrator := keeper.NewMigrator(am.keeper)
@@ -148,9 +140,18 @@ func (am AppModule) BeginBlock(_ sdk.Context, _ abci.RequestBeginBlock) {
 }
 
 func (am AppModule) EndBlock(ctx sdk.Context, _ abci.RequestEndBlock) []abci.ValidatorUpdate {
-	if ctx.BlockHeight() == 2 {
-		ApplayNftContract(ctx, am.keeper, am.ak)
+	if ctx.BlockHeight() == 1 {
+		//ApplayNftContract(ctx, am.keeper, am.ak)
+
+		//DeployStakeContract(ctx, am.keeper)
+
+		
+		DeployTokenFactoryContract(ctx, am.keeper)
+
+		//todo USDT
+		RegisterCoin(ctx, am.keeper)
 	}
+
 	return []abci.ValidatorUpdate{}
 }
 
