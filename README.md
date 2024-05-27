@@ -1,4 +1,4 @@
-## DaoDst BlankChain
+## DaoDst BlockChain
 
 Golang execution layer implementation of the NXNOS protocol.
 
